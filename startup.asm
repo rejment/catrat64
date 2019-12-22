@@ -23,24 +23,13 @@ entrypoint:
     lda #$00
     jsr $1000
 
-    // screen=$400 font=@2000
-    lda #%00011000
-    sta $d018
-
     // set multicolor
     lda #%11011000
     sta $d016
 
-    // setup colors
+    // black border
     lda #0
     sta $d020
-    lda #12
-    sta $d021
-    lda #10
-    sta $d022
-    lda #11
-    sta $d023
-
 
     // copy map
     ldx #$0
@@ -55,6 +44,18 @@ entrypoint:
     cpx #250
     bne !-
 
+    // copy hud
+    ldx #$0
+!:  lda hud_data, x
+    sta $400+[22*40], x
+    tay
+    lda hud_colors, y
+    sta $d800+[22*40],x
+    inx
+    cpx #120
+    bne !-
+
+
     // show player sprite
     lda #sprite_data/64
     sta $07F8   // sprite data #1
@@ -67,11 +68,38 @@ entrypoint:
     jsr start_animation
 
 mainloop:
-    // wait for raster pos
-    lda #$e0
+    // wait for HUD raster pos
+    lda #$df
     cmp $d012
     bne *-3
-   
+    // setup colors
+    lda #00
+    sta $d021
+    // screen=$400 font=$2000
+    lda #%00011100
+    sta $d018
+    lda #13
+    sta $d022
+    lda #1
+    sta $d023
+
+    // after HUD
+    lda #$ff
+    cmp $d012
+    bne *-3
+    lda #12
+    sta $d021
+    // screen=$400 font=$2000
+    lda #%00011000
+    sta $d018
+    // setup colors
+    lda #12
+    sta $d021
+    lda #10
+    sta $d022
+    lda #11
+    sta $d023
+
    // update music
     jsr $1003
 
@@ -495,6 +523,16 @@ sfx1:
 map_font:   .fill map1.getFontSize(),  map1.getFont(i)
 map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
 map_colors: .fill map1.getColorSize(), map1.getColor(i)
+
+/////////////////////////////////////////////
+// LOAD HUD FROM CHARPAD FILE
+*=$3000 "Data"
+.var hudTemplate = "Junk=0,Font=20,Color=188,Map=209"
+.var hud = LoadBinary("hud.ctm", hudTemplate)
+hud_font:   .fill hud.getFontSize(),  hud.getFont(i)
+hud_data:   .fill hud.getMapSize()/2, hud.getMap(i*2)
+hud_colors: .fill hud.getColorSize(), hud.getColor(i)
+
 
 /////////////////////////////////////////////
 // LOAD SPRITES FROM SPRITEPAD FILE
