@@ -113,219 +113,8 @@ mainloop:
     lda player_y
     sta $d001   // sprite y #1
 
+    jsr statemachine
 
-    // are we falling?
-    lda player_x
-    sta get_collision_x
-    lda player_x+1
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$08
-    sta get_collision_y
-    jsr get_collision
-    cmp #$10
-    beq nofall
-    lda player_x
-    clc
-    adc #$07
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    jsr get_collision
-    cmp #$10
-    beq nofall
-
-    // do the fall
-    lda #$01
-    sta player_falling
-    ldx fall_index
-    cpx fall_table_length
-    beq !+
-    inx
-    stx fall_index
-!:  lda fall_table, x
-    clc
-    adc player_y
-    sta player_y
-    jmp endfall
-nofall:
-    lda #$00
-    sta player_falling
-    sta fall_index
-
-    // floor
-    lda get_collision_result_y
-    clc
-    rol
-    rol
-    rol
-    adc #$25-8
-    sta player_y
-
-endfall:
-
-
-    // no moving when falling
-    lda #$01
-    cmp player_falling
-    bne move
-    jmp nomove
-move:
-
-    // hold up?
-    lda $dc00
-    and #%0001
-    bne notu
-    lda player_x
-    clc
-    adc #$03
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$04
-    sta get_collision_y
-    jsr get_collision
-    cmp #$20 // up zip
-    bne notu
-
-    // zip up
-    lda get_collision_result_x
-    sta find_portal_x
-    lda get_collision_result_y
-    sta find_portal_y
-    lda #$ff
-    sta find_portal_direction
-    jsr find_portal
-
-    lda find_portal_result
-    clc
-    rol
-    rol
-    rol
-    adc #$25
-    sta player_y
-
-    lda #<sfx1
-    ldy #>sfx1
-    ldx #14        //0, 7 or 14 for channels 1-3
-    jsr $1000+6
-
-notu:
-
-
-    // hold down?
-    lda $dc00
-    and #%0010
-    bne notd
-    lda player_x
-    clc
-    adc #$03
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$04
-    sta get_collision_y
-    jsr get_collision
-    cmp #$30 // down zip
-    bne notd
-
-    // zip down
-    lda get_collision_result_x
-    sta find_portal_x
-    lda get_collision_result_y
-    sta find_portal_y
-    lda #$01
-    sta find_portal_direction
-    jsr find_portal
-
-    lda find_portal_result
-    clc
-    rol
-    rol
-    rol
-    adc #$25
-    sta player_y
-
-    lda #<sfx1
-    ldy #>sfx1
-    ldx #14        //0, 7 or 14 for channels 1-3
-    jsr $1000+6
-notd:
-
-
-    // hold right?
-    lda $dc00
-    and #%1000
-    bne notr
-
-    lda #$3
-    jsr start_animation
-
-    // would collide?
-    lda player_x
-    clc
-    adc #$08
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    sta get_collision_y
-    jsr get_collision
-    cmp #$10
-    beq notr
-
-    // move right
-    lda player_x
-    clc
-    adc #$01
-    sta player_x
-    lda player_x+1
-    adc #$00
-    sta player_x+1
-notr:
-
-    // hold left?
-    lda $dc00
-    and #%0100
-    bne notl
-
-    lda #$2
-    jsr start_animation
-
-    // would collide?
-    lda player_x
-    sec
-    sbc #$01
-    sta get_collision_x
-    lda player_x+1
-    sbc #$00
-    sta get_collision_x+1
-    lda player_y
-    sta get_collision_y
-    jsr get_collision
-    cmp #$10
-    beq notl
-
-    // move left
-    lda player_x
-    sec
-    sbc #$01
-    sta player_x
-    lda player_x+1
-    sbc #$00
-    sta player_x+1
-notl:
-
-nomove:
     jmp mainloop
 
 
@@ -388,7 +177,7 @@ get_collision:
     ldy get_collision_x+1
     beq !+
     lda get_collision_x
-    cmp #$58
+    cmp #$58-8
     bcs !border+
 !:
 
@@ -396,7 +185,7 @@ get_collision:
     ldy get_collision_x+1
     bne !+
     lda get_collision_x
-    cmp #$18
+    cmp #$18+8
     bcc !border+
 !:
 
@@ -489,6 +278,8 @@ move_animation:
 
 !end:
     rts
+
+#import "statemachine.asm"
 
 
 /////////////////////////////////////////////
