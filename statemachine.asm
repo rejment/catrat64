@@ -46,6 +46,8 @@ Start:
     sta find_portal_direction
     jsr find_portal
     lda find_portal_result
+    cmp #$ff
+    beq cancel
     clc
     rol
     rol
@@ -60,6 +62,10 @@ Start:
     sta currentstate
     lda #zipwait
     sta zipdelay
+    rts
+cancel:
+    lda #WAITING
+    sta currentstate
     rts
 }
 
@@ -88,6 +94,8 @@ Start:
     sta find_portal_direction
     jsr find_portal
     lda find_portal_result
+    cmp #$ff
+    beq cancel
     clc
     rol
     rol
@@ -102,6 +110,10 @@ Start:
     sta currentstate
     lda #zipwait
     sta zipdelay
+    rts
+cancel:
+    lda #WAITING
+    sta currentstate
     rts
 }
 
@@ -230,11 +242,13 @@ Falling: {
     ldx #$00
     ldy #$08
     jsr get_player_collision
+    jsr pickup_loot
     cmp #$10
     beq nofall
     ldx #$07
     ldy #$08
     jsr get_player_collision
+    jsr pickup_loot
     cmp #$10
     beq nofall
 
@@ -303,7 +317,7 @@ notl:
     ldx #$03
     ldy #$04
     jsr get_player_collision
-    cmp #$30 // up zip
+    cmp #$20 // up zip
     bne notu
     jmp ZipUp.Start
  notu:

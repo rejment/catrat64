@@ -47,6 +47,8 @@ entrypoint:
     and #$f0
     cmp #$20
     bcc !notanimated+
+    cmp #$40
+    bcs !notanimated+
     lsr
     lsr
     lsr
