@@ -6,8 +6,8 @@ charanim_hi:    .fill 32, 0
 charanim_lo:    .fill 32, 0
 charanim_min:   .fill 32, 0
 charanim_max:   .fill 32, 0
-material_min:   .byte $00, $00, 5, 49
-material_max:   .byte $00, $00, 7, 56
+material_min:   .byte $00, $00, 1, 43
+material_max:   .byte $00, $00, 3, 46
 char_animation_delay: .byte 1
 char_animation_count: .byte 0
 

@@ -139,6 +139,7 @@ walking:
     ldy #$00
     jsr get_player_collision
     jsr pickup_loot
+    lda get_collision_result
     cmp #$10
     beq notr
 
@@ -161,6 +162,8 @@ walking:
     ldy #$08
     jsr get_player_collision
     cmp #$10
+    beq nofall
+    cmp #$60
     beq nofall
 
     lda #$5
@@ -197,6 +200,7 @@ walking:
     ldy #$00
     jsr get_player_collision_left
     jsr pickup_loot
+    lda get_collision_result
     cmp #$10
     beq notl
 
@@ -219,6 +223,8 @@ walking:
     ldy #$08
     jsr get_player_collision
     cmp #$10
+    beq nofall
+    cmp #$60
     beq nofall
 
     lda #$4
@@ -254,7 +260,7 @@ Falling: {
 
     // do the fall
     ldx fall_index
-    cpx fall_table_length
+    cpx #fall_table_length
     beq !+
     inx
     stx fall_index

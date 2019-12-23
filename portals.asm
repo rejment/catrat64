@@ -3,10 +3,6 @@
 //
 //
 //
-find_portal_x:          .byte 0
-find_portal_y:          .byte 0
-find_portal_direction:  .byte 0
-find_portal_result:     .byte 0
 find_portal:
     lda find_portal_y
     clc

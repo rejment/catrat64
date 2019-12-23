@@ -5,13 +5,6 @@
 // col  = (x-$18)/8
 // line = (y-$25)/8 
 // offset = line*40+col
-get_collision_x:        .byte 0, 0
-get_collision_y:        .byte 0
-get_collision_result:   .byte 0
-get_collision_result_a: .byte 0
-get_collision_result_x: .byte 0
-get_collision_result_y: .byte 0
-get_collision_char:     .byte 0
 get_collision:
     lda #$0
     sta get_collision_result

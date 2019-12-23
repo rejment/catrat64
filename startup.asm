@@ -15,11 +15,28 @@ entrypoint:
 
     sei
 
+    lda #$7f
+    sta $dc0d
+    sta $dd0d
+
+
     // $A000-BFFF   ram
     // $D000-DFFF   i/o
     // $E000-FFFF   ram
     lda #$35
     sta $01
+
+    // clear zeropage
+    lda #$00
+zl: sta $02
+    inc zl+1
+    bne zl
+    lda #$28
+    sta player_x
+    lda #$b5
+    sta player_y
+    lda #$06
+    sta player_anim_delay
 
     // init music
     lda #$00
@@ -186,19 +203,8 @@ mainloop:
 
 /////////////////////////////////////////////
 // PLAYER DATA
-player_x:           .byte $28
-                    .byte $00
-player_y:           .byte $b5
-player_anim:        .byte $ff
-player_anim_frame:  .byte $00
-player_anim_end:    .byte $00
-player_anim_delay:  .byte $06
-
-player_falling:     .byte $00
-fall_index:         .byte $00
-
 fall_table:         .byte 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2
-.label fall_table_length = *-fall_table
+.label fall_table_length = *-fall_table-1
 
 /////////////////////////////////////////////
 // IMPORT SOUND FROM GOATTRACKER
@@ -215,7 +221,7 @@ sfx1:
 // LOAD MAP FROM CHARPAD FILE
 *=$2000 "Map"
 .var ctmTemplate = "Junk=0,Font=20,Color=2068,Map=2324"
-.var map1 = LoadBinary("pinkmap.ctm", ctmTemplate)
+.var map1 = LoadBinary("level2.ctm", ctmTemplate)
 map_font:   .fill map1.getFontSize(),  map1.getFont(i)
 map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
 map_colors: .fill map1.getColorSize(), map1.getColor(i)
