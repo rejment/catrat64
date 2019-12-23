@@ -18,7 +18,7 @@ statemachine:
     sta j+2
 j:  jmp $0000
 
-.label zipwait = 10
+.label zipwait = 14
 zipdelay:   .byte 25
 ziptarget:  .byte 0
 ZipUp: {
@@ -48,6 +48,9 @@ Start:
     rol
     adc #$25
     sta ziptarget
+
+    lda #$6
+    jsr start_animation
 
     lda #ZIP_UP
     sta currentstate
@@ -82,6 +85,10 @@ Start:
     rol
     adc #$25
     sta ziptarget
+
+    lda #$6
+    jsr start_animation
+
     lda #ZIP_DOWN
     sta currentstate
     lda #zipwait

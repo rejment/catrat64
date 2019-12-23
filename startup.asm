@@ -9,6 +9,7 @@
 BasicUpstart2(entrypoint)
 
 
+*=* "Code"
 entrypoint:
 
     sei
@@ -74,7 +75,7 @@ lo:
     // copy hud
     ldx #$0
 !:  lda hud_data, x
-    sta $400+[22*40], x
+    sta $4400+[22*40], x
     tay
     lda hud_colors, y
     sta $d800+[22*40],x
@@ -83,13 +84,25 @@ lo:
     bne !-
 
 
+    // bank 0 - %11 - $0000–$3FFF
+    lda $dd00
+    and #$fc
+    ora #$03
+    sta $dd00
+    // screen=$400 font=$2000
+    lda #%00011000
+    sta $d018
+
+
     // show player sprite
     lda #sprite_data/64
     sta $07F8   // sprite data #1
-    lda #$01
+    lda #%001
     sta $d015   // sprite enable
     lda #BLACK
     sta $d027   // sprite color #1
+    lda #DARK_GRAY
+    sta $d028   // sprite color #1
 
     lda #$01
     jsr start_animation
@@ -104,13 +117,15 @@ mainloop:
     sta $d021
     sta $d022
     sta $d023
+    // bank 1 - %10 - $4000–$7FFF
+    lda $dd00
+    and #$fc
+    ora #$02
+    sta $dd00
 
     lda #$e3
     cmp $d012
     bne *-3
-    // screen=$400 font=$3000
-    lda #%00011100
-    sta $d018
     lda #13
     sta $d022
     lda #1
@@ -122,9 +137,6 @@ mainloop:
     bne *-3
     lda #12
     sta $d021
-    // screen=$400 font=$2000
-    lda #%00011000
-    sta $d018
     // setup colors
     lda #12
     sta $d021
@@ -132,6 +144,12 @@ mainloop:
     sta $d022
     lda #11
     sta $d023
+    // bank 0 - %11 - $0000–$3FFF
+    lda $dd00
+    and #$fc
+    ora #$03
+    sta $dd00
+
 
     // animate characters
     jsr char_animation
@@ -143,11 +161,14 @@ mainloop:
     jsr move_animation
     lda player_x
     sta $d000   // sprite x #1
+    sta $d002   // sprite x #2
     lda player_x+1
     and #$01
     sta $d010
     lda player_y
     sta $d001   // sprite y #1
+    sta $d003   // sprite y #2
+    dec $d003
 
     jsr statemachine
     jmp mainloop
@@ -310,6 +331,7 @@ move_animation:
     clc
     adc #sprite_data/64
     sta $07F8   // sprite data #1
+    sta $07F9   // sprite data #2
 
 !end:
     rts
@@ -361,9 +383,9 @@ skipchar:
 
 /////////////////////////////////////////////
 // PLAYER DATA
-player_x:           .byte $40 // $18
+player_x:           .byte $28
                     .byte $00
-player_y:           .byte $48
+player_y:           .byte $b5
 player_anim:        .byte $ff
 player_anim_frame:  .byte $00
 player_anim_end:    .byte $00
@@ -383,11 +405,12 @@ sfx1:
     .byte $00,$FA,$08,$B8,$81,$A4,$41,$A0,$B4,$81,$98,$92,$9C,$90,$95,$9E
     .byte $92,$80,$94,$8F,$8E,$8D,$8C,$8B,$8A,$89,$88,$87,$86,$84,$00
 
+*=* "Statemachine"
 #import "statemachine.asm"
 
 /////////////////////////////////////////////
 // LOAD MAP FROM CHARPAD FILE
-*=$2000 "Data"
+*=$2000 "Map"
 .var ctmTemplate = "Junk=0,Font=20,Color=2068,Map=2324"
 .var map1 = LoadBinary("pinkmap.ctm", ctmTemplate)
 map_font:   .fill map1.getFontSize(),  map1.getFont(i)
@@ -395,17 +418,8 @@ map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
 map_colors: .fill map1.getColorSize(), map1.getColor(i)
 
 /////////////////////////////////////////////
-// LOAD HUD FROM CHARPAD FILE
-*=$3000 "Data"
-.var hudTemplate = "Junk=0,Font=20,Color=188,Map=209"
-.var hud = LoadBinary("hud.ctm", hudTemplate)
-hud_font:   .fill hud.getFontSize(),  hud.getFont(i)
-hud_data:   .fill hud.getMapSize()/2, hud.getMap(i*2)
-hud_colors: .fill hud.getColorSize(), hud.getColor(i)
-
-
-/////////////////////////////////////////////
 // LOAD SPRITES FROM SPRITEPAD FILE
+*=* "Sprites"
 .var spdTemplate = "Junk=0,SpriteCount=4,AnimationCount=5,SpriteData=9"
 .var spritefile1 = LoadBinary("Kattrattan.spd", spdTemplate)
 .align 64
@@ -414,6 +428,15 @@ spr_anims_from:     .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpr
 spr_anims_to:       .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpriteData(64*(spritefile1.getSpriteCount(0)+1) + (spritefile1.getAnimationCount(0)+1) + i)
 spr_anims_reload:   .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpriteData(64*(spritefile1.getSpriteCount(0)+1) + (spritefile1.getAnimationCount(0)+1)*2 + i)
 spr_anims_attrib:   .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpriteData(64*(spritefile1.getSpriteCount(0)+1) + (spritefile1.getAnimationCount(0)+1)*3 + i)
+
+/////////////////////////////////////////////
+// LOAD HUD FROM CHARPAD FILE
+*=$6000 "Hud"
+.var hudTemplate = "Junk=0,Font=20,Color=188,Map=209"
+.var hud = LoadBinary("hud.ctm", hudTemplate)
+hud_font:   .fill hud.getFontSize(),  hud.getFont(i)
+hud_data:   .fill hud.getMapSize()/2, hud.getMap(i*2)
+hud_colors: .fill hud.getColorSize(), hud.getColor(i)
 
 
 line_pos_hi:
