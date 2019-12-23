@@ -30,6 +30,7 @@ ZipUp: {
 
     lda #WAITING
     sta currentstate
+    jmp statemachine
 wait:
     rts
 Start:
@@ -52,7 +53,7 @@ Start:
     sta currentstate
     lda #zipwait
     sta zipdelay
-    jmp ZipUp
+    rts
 }
 ZipDown: {
     dec zipdelay
@@ -61,7 +62,9 @@ ZipDown: {
     lda ziptarget
     sta player_y
 
-    jmp Waiting.Start
+    lda #WAITING
+    sta currentstate
+    jmp statemachine
 wait:
     rts
 Start:
@@ -83,7 +86,7 @@ Start:
     sta currentstate
     lda #zipwait
     sta zipdelay
-    jmp ZipDown
+    rts
 }
 
 WalkingRight: {
@@ -100,16 +103,9 @@ WalkingRight: {
 walking:
 
     // would collide?
-    lda player_x
-    clc
-    adc #$08
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    sta get_collision_y
-    jsr get_collision
+    ldx #$08
+    ldy #$00
+    jsr get_player_collision
     cmp #$10
     beq notr
 
@@ -123,25 +119,14 @@ walking:
     sta player_x+1
 
     // are we not on ground?
-    lda player_x
-    sta get_collision_x
-    lda player_x+1
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$08
-    sta get_collision_y
-    jsr get_collision
+    ldx #$00
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
-    lda player_x
-    clc
-    adc #$07
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    jsr get_collision
+    ldx #$07
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
 
@@ -171,16 +156,10 @@ WalkingLeft: {
 walking:
 
     // would collide?
-    lda player_x
-    sec
-    sbc #$01
-    sta get_collision_x
-    lda player_x+1
-    sbc #$00
-    sta get_collision_x+1
-    lda player_y
-    sta get_collision_y
-    jsr get_collision
+    ldx #$01
+    ldy #$00
+    jsr get_player_collision_left
+
     cmp #$10
     beq notl
 
@@ -194,25 +173,14 @@ walking:
     sta player_x+1
 
     // are we not on ground?
-    lda player_x
-    sta get_collision_x
-    lda player_x+1
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$08
-    sta get_collision_y
-    jsr get_collision
+    ldx #$00
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
-    lda player_x
-    clc
-    adc #$07
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    jsr get_collision
+    ldx #$07
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
 
@@ -231,25 +199,14 @@ notl:
 
 Falling: {
     // did we hit ground?
-    lda player_x
-    sta get_collision_x
-    lda player_x+1
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$08
-    sta get_collision_y
-    jsr get_collision
+    ldx #$00
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
-    lda player_x
-    clc
-    adc #$07
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    jsr get_collision
+    ldx #$07
+    ldy #$08
+    jsr get_player_collision
     cmp #$10
     beq nofall
 
@@ -266,8 +223,6 @@ Falling: {
     jmp endfall
 
 nofall:
-    lda #WAITING
-    sta currentstate
     lda #0
     sta fall_index
 
@@ -279,6 +234,9 @@ nofall:
     rol
     adc #$25-8
     sta player_y
+    lda #WAITING
+    sta currentstate
+    jmp statemachine
 endfall:
     rts
 }
@@ -310,41 +268,22 @@ notl:
     lda $dc00
     and #%0001
     bne notu
-    lda player_x
-    clc
-    adc #$03
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$04
-    sta get_collision_y
-    jsr get_collision
-    cmp #$20 // up zip
+    ldx #$03
+    ldy #$04
+    jsr get_player_collision
+    cmp #$30 // up zip
     bne notu
     jmp ZipUp.Start
  notu:
-
 
     // hold down?
     lda $dc00
     and #%0010
     bne notd
-    lda player_x
-    clc
-    adc #$03
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-    adc #$04
-    sta get_collision_y
-    jsr get_collision
-    cmp #$30 // down zip
+    ldx #$03
+    ldy #$04
+    jsr get_player_collision
+    cmp #$20 // down zip
     bne notd
     jmp ZipDown.Start
 notd:
@@ -355,4 +294,38 @@ Start:
     lda #WAITING
     sta currentstate
     jmp statemachine
+}
+
+get_player_collision: {
+    stx x+1
+    sty y+1
+    lda player_x
+    clc
+x:  adc #$00
+    sta get_collision_x
+    lda player_x+1
+    adc #$00
+    sta get_collision_x+1
+    lda player_y
+    clc
+y:  adc #$00
+    sta get_collision_y
+    jmp get_collision
+}
+
+get_player_collision_left: {
+    stx x+1
+    sty y+1
+    lda player_x
+    sec
+x:  sbc #$00
+    sta get_collision_x
+    lda player_x+1
+    sbc #$00
+    sta get_collision_x+1
+    lda player_y
+    clc
+y:  adc #$00
+    sta get_collision_y
+    jmp get_collision
 }
