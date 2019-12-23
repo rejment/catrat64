@@ -18,6 +18,10 @@ statemachine:
     sta j+2
 j:  jmp $0000
 
+////////////////////////////////////////
+//
+//  ZIP UP
+//
 .label zipwait = 14
 zipdelay:   .byte 25
 ziptarget:  .byte 0
@@ -58,6 +62,11 @@ Start:
     sta zipdelay
     rts
 }
+
+////////////////////////////////////////
+//
+//  ZIP DOWN
+//
 ZipDown: {
     dec zipdelay
     bne wait
@@ -96,6 +105,10 @@ Start:
     rts
 }
 
+////////////////////////////////////////
+//
+//  WALKING RIGHT
+//
 WalkingRight: {
     lda #$3
     jsr start_animation
@@ -113,6 +126,7 @@ walking:
     ldx #$08
     ldy #$00
     jsr get_player_collision
+    jsr pickup_loot
     cmp #$10
     beq notr
 
@@ -149,6 +163,10 @@ notr:
     rts
 }
 
+////////////////////////////////////////
+//
+//  WALKING LEFT
+//
 WalkingLeft: {
     lda #$2
     jsr start_animation
@@ -166,7 +184,7 @@ walking:
     ldx #$01
     ldy #$00
     jsr get_player_collision_left
-
+    jsr pickup_loot
     cmp #$10
     beq notl
 
@@ -203,7 +221,10 @@ notl:
     rts
 }
 
-
+////////////////////////////////////////
+//
+//  FALLING
+//
 Falling: {
     // did we hit ground?
     ldx #$00
@@ -248,6 +269,10 @@ endfall:
     rts
 }
 
+////////////////////////////////////////
+//
+//  WAITING
+//
 Waiting: {
     lda player_anim
     and #$01
@@ -301,38 +326,4 @@ Start:
     lda #WAITING
     sta currentstate
     jmp statemachine
-}
-
-get_player_collision: {
-    stx x+1
-    sty y+1
-    lda player_x
-    clc
-x:  adc #$00
-    sta get_collision_x
-    lda player_x+1
-    adc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-y:  adc #$00
-    sta get_collision_y
-    jmp get_collision
-}
-
-get_player_collision_left: {
-    stx x+1
-    sty y+1
-    lda player_x
-    sec
-x:  sbc #$00
-    sta get_collision_x
-    lda player_x+1
-    sbc #$00
-    sta get_collision_x+1
-    lda player_y
-    clc
-y:  adc #$00
-    sta get_collision_y
-    jmp get_collision
 }

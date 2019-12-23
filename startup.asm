@@ -6,6 +6,7 @@
 //  Code+SFX: Daniel Rejment
 //
 //
+#import "zeropage.asm"
 BasicUpstart2(entrypoint)
 
 
@@ -14,10 +15,10 @@ entrypoint:
 
     sei
 
-    //Bank out BASIC and Kernal ROM
-    lda $01
-    and #%11111000 
-    ora #%00000101
+    // $A000-BFFF   ram
+    // $D000-DFFF   i/o
+    // $E000-FFFF   ram
+    lda #$35
     sta $01
 
     // init music
@@ -174,210 +175,10 @@ mainloop:
     jmp mainloop
 
 
-////////////////////////////////////////////////////////////////
-// FIND_PORTAL
-//
-//
-//
-find_portal_x:          .byte 0
-find_portal_y:          .byte 0
-find_portal_direction:  .byte 0
-find_portal_result:     .byte 0
-find_portal:
-    lda find_portal_y
-    clc
-    adc find_portal_direction
-    sta find_portal_y
-    tax
-    lda line_pos_lo, x
-    sta get_collision_temp
-    lda line_pos_hi, x
-    sta get_collision_temp+1
-    lda (get_collision_temp),y
-    tax
-    lda map_colors, x
-    and #$f0
-    cmp #$30
-    beq !+
-    cmp #$20
-    beq !+
-    jmp find_portal
-!:  
-    lda find_portal_y
-    // clc
-    // adc #$ff
-    sta find_portal_result
-
-    rts
-
-
-////////////////////////////////////////////////////////////////
-// GET COLLISION
-// $18 >= x < $0158
-// $25 >= y < $ed
-// col  = (x-$18)/8
-// line = (y-$25)/8 
-// offset = line*40+col
-get_collision_x:        .byte 0, 0
-get_collision_y:        .byte 0
-get_collision_result:   .byte 0
-get_collision_result_a: .byte 0
-get_collision_result_x: .byte 0
-get_collision_result_y: .byte 0
-.label get_collision_temp = $fb
-get_collision:
-    lda #$0
-    sta get_collision_result
-
-    // right border?
-    ldy get_collision_x+1
-    beq !+
-    lda get_collision_x
-    cmp #$58-8
-    bcs !border+
-!:
-
-    // left border?
-    ldy get_collision_x+1
-    bne !+
-    lda get_collision_x
-    cmp #$18+8
-    bcc !border+
-!:
-
-    // read from map?
-    lda get_collision_x+1
-    ror
-    lda get_collision_x
-    ror
-    clc
-    ror
-    clc
-    ror
-    sec
-    sbc #$18/8
-    tay
-    sta get_collision_result_x
-
-    lda get_collision_y
-    sec
-    sbc #$25
-    clc
-    ror
-    clc
-    ror
-    clc
-    ror
-    tax
-    sta get_collision_result_y
-
-    // map_data + y*40 + x
-    lda line_pos_lo, x
-    sta get_collision_temp
-    lda line_pos_hi, x
-    sta get_collision_temp+1
-    lda (get_collision_temp),y
-    tax
-    lda map_colors, x
-    and #$f0
-    sta get_collision_result
-!end:
-    rts
-!border:
-    lda #$10
-    sta get_collision_result
-    rts
-
-/////////////////////////////////////////
-// START ANIMATION
-//
-start_animation:
-    cmp player_anim
-    beq !end+
-    tax
-    sta player_anim
-    lda spr_anims_reload,x
-    sta player_anim_delay
-    inc player_anim_delay
-    lda spr_anims_to,x
-    sta player_anim_end
-    inc player_anim_end
-    lda spr_anims_from,x
-    sta player_anim_frame
-    clc
-    adc #sprite_data/64
-    sta $07F8   // sprite data #1
-!end:
-    rts
-
-/////////////////////////////////////////
-// MOVE ANIMATION
-//
-move_animation:
-    lda player_anim
-    tax
-    dec player_anim_delay
-    bpl !end+
-    lda spr_anims_reload,x
-    sta player_anim_delay
-
-    inc player_anim_frame
-    lda player_anim_frame
-    cmp player_anim_end
-    bne !+
-    lda spr_anims_from,x
-    sta player_anim_frame
-!:
-    clc
-    adc #sprite_data/64
-    sta $07F8   // sprite data #1
-    sta $07F9   // sprite data #2
-
-!end:
-    rts
-
-charanim_hi:    .fill 32, 0
-charanim_lo:    .fill 32, 0
-charanim_min:   .fill 32, 0
-charanim_max:   .fill 32, 0
-material_min:   .byte $00, $00, 5, 49
-material_max:   .byte $00, $00, 7, 56
-char_animation_delay: .byte 1
-char_animation_count: .byte 0
-
-char_animation: {
-    dec char_animation_delay
-    beq !doit+
-    rts
-!doit:
-    lda #$08
-    sta char_animation_delay
-
-    ldx #$0     // X=list index
-nextindex:
-    lda charanim_hi,x
-    sta loadchar+2
-    sta savechar+2
-    lda charanim_lo,x
-    sta loadchar+1
-    sta savechar+1
-loadchar:
-    lda $400
-    // beq skipchar
-    clc
-    adc #$01
-    cmp charanim_max, x
-    bcc savechar
-    beq savechar
-    lda charanim_min, x
-savechar:
-    sta $400
-skipchar:
-    inx
-    cpx char_animation_count
-    bne nextindex
-    rts
-}
+#import "portals.asm"
+#import "collisions.asm"
+#import "animations.asm"
+#import "charanims.asm"
 
 
 
@@ -441,10 +242,10 @@ hud_colors: .fill hud.getColorSize(), hud.getColor(i)
 
 line_pos_hi:
     .for (var y=0; y<25; y++) {
-        .byte (map_data + (y*40)) >> 8
+        .byte ($0400 + (y*40)) >> 8
     }
 line_pos_lo:
     .for (var y=0; y<25; y++) {
-        .byte (map_data + (y*40)) & $ff
+        .byte ($0400 + (y*40)) & $ff
     }
 
