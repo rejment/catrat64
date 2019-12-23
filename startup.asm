@@ -32,17 +32,44 @@ entrypoint:
     sta $d020
 
     // copy map
+.for (var i=0; i<4; i++) {
     ldx #$0
-!:  .for (var i=0; i<4; i++) {
-    lda map_data+[250*i], x
-    sta $400+[250*i], x
+!:  stx lo+1
+    lda map_data+[256*i], x
+    sta $400+[256*i], x
     tay
     lda map_colors, y
-    sta $d800+[250*i],x
-}
+    sta $d800+[256*i],x
+
+    // check for animated materials
+    and #$f0
+    cmp #$20
+    bcc !notanimated+
+    lsr
+    lsr
+    lsr
+    lsr
+    //and #$0f
+    tay
+
+    // x is "pushed" into lo+1
+    ldx char_animation_count
+    lda material_min, y
+    sta charanim_min, x
+    lda material_max, y
+    sta charanim_max, x
+    lda #$04 + i
+    sta charanim_hi, x
+lo:
+    lda #$00
+    sta charanim_lo, x
+    inc char_animation_count
+    ldx lo+1        // restore x
+!notanimated:
     inx
-    cpx #250
+    cpx #$00 // overflowed?
     bne !-
+}
 
     // copy hud
     ldx #$0
@@ -69,13 +96,19 @@ entrypoint:
 
 mainloop:
     // wait for HUD raster pos
-    lda #$df
+    lda #$e2
     cmp $d012
     bne *-3
     // setup colors
     lda #00
     sta $d021
-    // screen=$400 font=$2000
+    sta $d022
+    sta $d023
+
+    lda #$e3
+    cmp $d012
+    bne *-3
+    // screen=$400 font=$3000
     lda #%00011100
     sta $d018
     lda #13
@@ -100,6 +133,9 @@ mainloop:
     lda #11
     sta $d023
 
+    // animate characters
+    jsr char_animation
+
    // update music
     jsr $1003
 
@@ -114,7 +150,6 @@ mainloop:
     sta $d001   // sprite y #1
 
     jsr statemachine
-
     jmp mainloop
 
 
@@ -279,14 +314,56 @@ move_animation:
 !end:
     rts
 
-#import "statemachine.asm"
+charanim_hi:    .fill 32, 0
+charanim_lo:    .fill 32, 0
+charanim_min:   .fill 32, 0
+charanim_max:   .fill 32, 0
+material_min:   .byte $00, $00, 5, 49
+material_max:   .byte $00, $00, 7, 56
+char_animation_delay: .byte 1
+char_animation_count: .byte 0
+
+char_animation: {
+    dec char_animation_delay
+    beq !doit+
+    rts
+!doit:
+    lda #$08
+    sta char_animation_delay
+
+    ldx #$0     // X=list index
+nextindex:
+    lda charanim_hi,x
+    sta loadchar+2
+    sta savechar+2
+    lda charanim_lo,x
+    sta loadchar+1
+    sta savechar+1
+loadchar:
+    lda $400
+    // beq skipchar
+    clc
+    adc #$01
+    cmp charanim_max, x
+    bcc savechar
+    beq savechar
+    lda charanim_min, x
+savechar:
+    sta $400
+skipchar:
+    inx
+    cpx char_animation_count
+    bne nextindex
+    rts
+}
+
 
 
 /////////////////////////////////////////////
 // PLAYER DATA
 player_x:           .byte $40 // $18
                     .byte $00
-player_y:           .byte $38
+player_y:           .byte $48
 player_anim:        .byte $ff
 player_anim_frame:  .byte $00
 player_anim_end:    .byte $00
@@ -305,6 +382,8 @@ fall_table:         .byte 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 
 sfx1:
     .byte $00,$FA,$08,$B8,$81,$A4,$41,$A0,$B4,$81,$98,$92,$9C,$90,$95,$9E
     .byte $92,$80,$94,$8F,$8E,$8D,$8C,$8B,$8A,$89,$88,$87,$86,$84,$00
+
+#import "statemachine.asm"
 
 /////////////////////////////////////////////
 // LOAD MAP FROM CHARPAD FILE
