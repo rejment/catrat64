@@ -1,10 +1,8 @@
 
-.enum   { WAITING, FALLING, WALKING_RIGHT, WALKING_LEFT, ZIP_UP, ZIP_DOWN }
+.enum   { TITLE, WAITING, FALLING, WALKING_RIGHT, WALKING_LEFT, ZIP_UP, ZIP_DOWN }
 
 jumptable:
-    .word Waiting, Falling, WalkingRight, WalkingLeft, ZipUp, ZipDown
-currentstate:
-    .byte WAITING
+    .word Title, Waiting, Falling, WalkingRight, WalkingLeft, ZipUp, ZipDown
 
 
 statemachine:
@@ -17,6 +15,13 @@ statemachine:
     lda jumptable+1, x
     sta j+2
 j:  jmp $0000
+
+////////////////////////////////////////
+Title: {
+    lda #WAITING
+    sta currentstate
+    rts
+}
 
 ////////////////////////////////////////
 //
@@ -133,6 +138,8 @@ WalkingRight: {
     sta currentstate
     jmp statemachine
 walking:
+    jsr checkwin
+    beq notr
 
     // would collide?
     ldx #$08
@@ -194,6 +201,8 @@ WalkingLeft: {
     sta currentstate
     jmp statemachine
 walking:
+    jsr checkwin
+    beq notl
 
     // would collide?
     ldx #$01
@@ -346,4 +355,20 @@ Start:
     lda #WAITING
     sta currentstate
     jmp statemachine
+}
+
+checkwin: {
+    ldx #$03
+    ldy #$03
+    jsr get_player_collision
+    cmp #$50
+    bne nowin
+
+    inc current_level
+    jsr show_level
+    lda #WAITING
+    sta currentstate
+    lda #$00
+nowin:
+    rts
 }

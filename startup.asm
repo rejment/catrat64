@@ -15,22 +15,50 @@ entrypoint:
 
     sei
 
+    // stop interrupts
     lda #$7f
     sta $dc0d
     sta $dd0d
 
-
-    // $A000-BFFF   ram
-    // $D000-DFFF   i/o
-    // $E000-FFFF   ram
+    // bank out stuff
     lda #$35
     sta $01
+
+    // black border
+    lda #0
+    sta $d020
+    sta $d021
+    sta $d022
+    sta $d023
+
+    // set multicolor
+    lda #%11011000
+    sta $d016
+
+    // screen=$400 font=$2000
+    lda #%00011000
+    sta $d018
 
     // clear zeropage
     lda #$00
 zl: sta $02
     inc zl+1
     bne zl
+
+    // clear screen + color
+    ldx #250
+    lda #0
+!:  dex
+    sta $400, x
+    sta $400 + 250, x
+    sta $400 + 500, x
+    sta $400 + 750, x
+    sta $d800, x
+    sta $d800 + 250, x
+    sta $d800 + 500, x
+    sta $d800 + 750, x
+    bne !-
+
     lda #$28
     sta player_x
     lda #$b5
@@ -38,80 +66,17 @@ zl: sta $02
     lda #$06
     sta player_anim_delay
 
+
+
     // init music
     lda #$00
     jsr $1000
 
-    // set multicolor
-    lda #%11011000
-    sta $d016
 
-    // black border
     lda #0
-    sta $d020
+    sta current_level
+    jsr show_level
 
-    // copy map
-.for (var i=0; i<4; i++) {
-    ldx #$0
-!:  stx lo+1
-    lda map_data+[256*i], x
-    sta $400+[256*i], x
-    tay
-    lda map_colors, y
-    sta $d800+[256*i],x
-
-    // check for animated materials
-    and #$f0
-    cmp #$20
-    bcc !notanimated+
-    cmp #$40
-    bcs !notanimated+
-    lsr
-    lsr
-    lsr
-    lsr
-    //and #$0f
-    tay
-
-    // x is "pushed" into lo+1
-    ldx char_animation_count
-    lda material_min, y
-    sta charanim_min, x
-    lda material_max, y
-    sta charanim_max, x
-    lda #$04 + i
-    sta charanim_hi, x
-lo:
-    lda #$00
-    sta charanim_lo, x
-    inc char_animation_count
-    ldx lo+1        // restore x
-!notanimated:
-    inx
-    cpx #$00 // overflowed?
-    bne !-
-}
-
-    // copy hud
-    ldx #$0
-!:  lda hud_data, x
-    sta $4400+[22*40], x
-    tay
-    lda hud_colors, y
-    sta $d800+[22*40],x
-    inx
-    cpx #120
-    bne !-
-
-
-    // bank 0 - %11 - $0000–$3FFF
-    lda $dd00
-    and #$fc
-    ora #$03
-    sta $dd00
-    // screen=$400 font=$2000
-    lda #%00011000
-    sta $d018
 
 
     // show player sprite
@@ -121,8 +86,6 @@ lo:
     sta $d015   // sprite enable
     lda #BLACK
     sta $d027   // sprite color #1
-    lda #DARK_GRAY
-    sta $d028   // sprite color #1
 
     lda #$01
     jsr start_animation
@@ -198,6 +161,7 @@ mainloop:
 #import "collisions.asm"
 #import "animations.asm"
 #import "charanims.asm"
+#import "levels.asm"
 
 
 
@@ -217,14 +181,15 @@ sfx1:
 *=* "Statemachine"
 #import "statemachine.asm"
 
+
 /////////////////////////////////////////////
 // LOAD MAP FROM CHARPAD FILE
-*=$2000 "Map"
+*=$2000 "Font"
 .var ctmTemplate = "Junk=0,Font=20,Color=2068,Map=2324"
-.var map1 = LoadBinary("level2.ctm", ctmTemplate)
+.var map1 = LoadBinary("ten.ctm", ctmTemplate)
 map_font:   .fill map1.getFontSize(),  map1.getFont(i)
-map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
 map_colors: .fill map1.getColorSize(), map1.getColor(i)
+
 
 /////////////////////////////////////////////
 // LOAD SPRITES FROM SPRITEPAD FILE
@@ -238,14 +203,30 @@ spr_anims_to:       .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpr
 spr_anims_reload:   .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpriteData(64*(spritefile1.getSpriteCount(0)+1) + (spritefile1.getAnimationCount(0)+1)*2 + i)
 spr_anims_attrib:   .fill spritefile1.getAnimationCount(0)+1, spritefile1.getSpriteData(64*(spritefile1.getSpriteCount(0)+1) + (spritefile1.getAnimationCount(0)+1)*3 + i)
 
+
+*=* "Map Data"
+map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
+
+
 /////////////////////////////////////////////
 // LOAD HUD FROM CHARPAD FILE
-*=$6000 "Hud"
-.var hudTemplate = "Junk=0,Font=20,Color=188,Map=209"
-.var hud = LoadBinary("hud.ctm", hudTemplate)
-hud_font:   .fill hud.getFontSize(),  hud.getFont(i)
-hud_data:   .fill hud.getMapSize()/2, hud.getMap(i*2)
-hud_colors: .fill hud.getColorSize(), hud.getColor(i)
+// *=$7000 "Hud"
+// .var hudTemplate = "Junk=0,Font=20,Color=188,Map=209"
+// .var hud = LoadBinary("hud.ctm", hudTemplate)
+// hud_font:   .fill hud.getFontSize(),  hud.getFont(i)
+// hud_data:   .fill hud.getMapSize()/2, hud.getMap(i*2)
+// hud_colors: .fill hud.getColorSize(), hud.getColor(i)
+
+
+
+level_pos_hi:
+    .for (var l=0; l<10; l++) {
+        .byte (map_data + (l*40*21)) >> 8
+    }
+level_pos_lo:
+    .for (var l=0; l<10; l++) {
+        .byte (map_data + (l*40*21)) & $ff
+    }
 
 
 line_pos_hi:

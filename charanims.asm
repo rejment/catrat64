@@ -2,12 +2,12 @@
 // CHARACTER ANIMATIONS
 // 
 //
-charanim_hi:    .fill 32, 0
-charanim_lo:    .fill 32, 0
-charanim_min:   .fill 32, 0
-charanim_max:   .fill 32, 0
-material_min:   .byte $00, $00, 1, 43
-material_max:   .byte $00, $00, 3, 46
+charanim_hi:    .fill 64, 0
+charanim_lo:    .fill 64, 0
+charanim_min:   .fill 64, 0
+charanim_max:   .fill 64, 0
+material_min:   .byte $00, $00, 11, 1
+material_max:   .byte $00, $00, 13, 10
 char_animation_delay: .byte 1
 char_animation_count: .byte 0
 
@@ -20,6 +20,7 @@ char_animation: {
     sta char_animation_delay
 
     ldx #$0     // X=list index
+    jmp next
 nextindex:
     lda charanim_hi,x
     sta loadchar+2
@@ -40,6 +41,7 @@ savechar:
     sta $400
 skipchar:
     inx
+next:
     cpx char_animation_count
     bne nextindex
     rts
