@@ -1,0 +1,85 @@
+styra vid fall
+sakta ner finare
+ögon
+beam
+loot
+
+ladda map
+character animation
+
+
+VIC BANK 3: C000-FFFF
+
+	$c000 - $c3ff Screen
+	$c400 - $cfff 48 sprites
+	$d000 - $efff 128 Sprites
+	$f000 - $f7ff 1 font
+	$f800 - $fffd 15 sprites
+
+
+
+
+                                 +----------------------------+
+                                 |       8K KERNAL ROM        |
+                      E000-FFFF  |           OR RAM           |
+                                 +----------------------------+
+                      D000-DFFF  | 4K I/O OR RAM OR CHAR. ROM |
+                                 +----------------------------+
+                      C000-CFFF  |           4K RAM           |
+                                 +----------------------------+
+                                 |    8K BASIC ROM OR RAM     |
+                      A000-BFFF  |       OR ROM PLUG-IN       |
+                                 +----------------------------+
+                                 |            8K RAM          |
+                      8000-9FFF  |       OR ROM PLUG-IN       |
+                                 +----------------------------+
+                                 |                            |
+                                 |                            |
+                                 |          16 K RAM          |
+                      4000-7FFF  |                            |
+                                 +----------------------------+
+                                 |                            |
+                                 |                            |
+                                 |          16 K RAM          |
+                      0000-3FFF  |                            |
+                                 +----------------------------+
+
+
+
+    // setup colors
+    lda #00
+    sta $d021
+    sta $d022
+    sta $d023
+    // bank 1 - %10 - $4000–$7FFF
+    lda $dd00
+    and #$fc
+    ora #$02
+    sta $dd00
+
+    lda #$e3
+    cmp $d012
+    bne *-3
+    lda #13
+    sta $d022
+    lda #1
+    sta $d023
+
+    // after HUD
+    lda #$ff
+    cmp $d012
+    bne *-3
+    lda #12
+    sta $d021
+    // setup colors
+    lda #12
+    sta $d021
+    lda #10
+    sta $d022
+    lda #11
+    sta $d023
+    // bank 0 - %11 - $0000–$3FFF
+    lda $dd00
+    and #$fc
+    ora #$03
+    sta $dd00

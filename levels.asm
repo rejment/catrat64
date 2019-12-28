@@ -1,7 +1,52 @@
+
+level_text: .byte 193, 186, 203, 186, 193
+            .byte 154
+            .byte 144
+            .byte 145
 show_level: {
+
+    jsr clearscreen
+
+    lda #10
+    sta $d021
+
+    ldx #0
+    lda #154
+!:  sta $400, x
+    sta $400+256, x
+    sta $400+512, x
+    sta $400+512+256, x
+    inx
+    bne !-
+
+
+    ldx #0
+!:  lda level_text, x
+    sta $400 + 8*40 + (20-5), x
+    inx
+    cpx #8
+    bne !-
+
+    lda #$00
+    jsr $1000
+
+!:  lda #$ff
+    cmp $d012
+    bne *-3
+    jsr $1003
+    lda $dc00
+    eor #$ff
+    and #%10000
+    beq !-
+
+    
+
+
+
+
+
     // screen off
-    lda $d011
-    and #%11101111
+    lda #$7b
     sta $d011
     // reset colors
     lda #12
@@ -13,12 +58,6 @@ show_level: {
 
     lda #$00
     sta char_animation_count
-
-
-// !:  lda $dc00
-//     and #%0010
-//     bne !-
-
 
     // setup ptrs
     ldx current_level
@@ -68,23 +107,26 @@ copy_char_loop:
 
     // ------------------------
     // reveal animation
-    ldx #$e0
+    ldx #$e2-9
 display:
-    // top
-    lda #$ff
+    // screen on
+    txa
+    cmp $d012
+    bne *-3
+    lda #$1B
+    sta $D011
+
+    // screen off
+    lda #$e2-8
     cmp $d012
     bne *-3
     // screen off
     lda #$7B
     sta $d011
-    // line
-    txa
-    cmp $d012
-    bne *-3
-    // screen on
-    lda #$1B
-    sta $D011
-    txa
+
+    stx a+1
+    jsr $1003
+a:  lda #00
     sec
     sbc #$02
     tax
@@ -93,6 +135,12 @@ display:
 
     lda #$1B
     sta $d011
+
+    lda #$01
+    jsr $1000
+
+    lda #250
+    sta player_time
 
     rts
 }
@@ -178,6 +226,10 @@ starting_pos:
     lda #$00
     adc #$00
     sta player_x+1
+
+    lda #$06
+    sta player_anim_delay
+
     rts
 
 

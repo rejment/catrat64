@@ -1,5 +1,5 @@
 *=2 "Zeropage" virtual
-
+TEMPX: .word 0,0,0,0
 TEMP1:    .byte 0
 TEMP2:    .byte 0
 temp:     .byte 0
@@ -30,6 +30,9 @@ player_falling:     .byte $00
 player_x:           .word $28
 player_y:           .byte $b5
 fall_index:         .byte $00
+player_score:       .word $0000
+player_time:        .byte $00
+frame_counter:      .byte $00
 
 // states
 currentstate:       .byte 0
@@ -40,3 +43,10 @@ map_data_ptr:       .word 0
 screen_data_ptr:    .word 0 
 color_data_ptr:     .word 0 
 map_bytes_remain:   .word 0 
+
+
+// print decimal
+print_decimal_value:   .word 0
+print_decimal_target:  .word 0
+print_decimal_bcd:     .byte 0, 0, 0
+print_decimal_string:  .byte 0, 0, 0, 0, 0, 0

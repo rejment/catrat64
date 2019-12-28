@@ -125,6 +125,20 @@ pickup_loot: {
     ldy get_collision_result_x
     sta (get_collision_temp),y
 
+
+    clc
+    lda player_score
+    adc #123
+    sta player_score
+    lda player_score+1
+    adc #0
+    sta player_score+1
+
+    // play pling
+    lda #<pling
+    ldy #>pling
+    ldx #14
+    jsr $1006
 exit:
 rx: ldx #$ff
 ry: ldy #$ff

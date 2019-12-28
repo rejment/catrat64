@@ -45,27 +45,7 @@ zl: sta $02
     inc zl+1
     bne zl
 
-    // clear screen + color
-    ldx #250
-    lda #0
-!:  dex
-    sta $400, x
-    sta $400 + 250, x
-    sta $400 + 500, x
-    sta $400 + 750, x
-    sta $d800, x
-    sta $d800 + 250, x
-    sta $d800 + 500, x
-    sta $d800 + 750, x
-    bne !-
-
-    lda #$28
-    sta player_x
-    lda #$b5
-    sta player_y
-    lda #$06
-    sta player_anim_delay
-
+    //  jsr intro
 
 
     // init music
@@ -78,7 +58,6 @@ zl: sta $02
     jsr show_level
 
 
-
     // show player sprite
     lda #sprite_data/64
     sta $07F8   // sprite data #1
@@ -89,53 +68,38 @@ zl: sta $02
 
     lda #$01
     jsr start_animation
+    lda #0
+    sta player_score
+    sta player_score+1
 
 mainloop:
     // wait for HUD raster pos
-    lda #$e2
+    lda #$e2-8
     cmp $d012
     bne *-3
-    // setup colors
-    lda #00
+
+    inc frame_counter
+    lda frame_counter
+    cmp #50
+    bne !+
+    lda #0
+    sta frame_counter
+    dec player_time
+!:
+
+    lda #0
     sta $d021
-    sta $d022
-    sta $d023
-    // bank 1 - %10 - $4000–$7FFF
-    lda $dd00
-    and #$fc
-    ora #$02
-    sta $dd00
 
-    lda #$e3
-    cmp $d012
-    bne *-3
-    lda #13
-    sta $d022
-    lda #1
-    sta $d023
-
-    // after HUD
     lda #$ff
     cmp $d012
     bne *-3
-    lda #12
-    sta $d021
-    // setup colors
-    lda #12
-    sta $d021
-    lda #10
-    sta $d022
-    lda #11
-    sta $d023
-    // bank 0 - %11 - $0000–$3FFF
-    lda $dd00
-    and #$fc
-    ora #$03
-    sta $dd00
 
+    lda #12
+    sta $d021
 
     // animate characters
     jsr char_animation
+    jsr update_hud
 
    // update music
     jsr $1003
@@ -157,13 +121,14 @@ mainloop:
     jmp mainloop
 
 
+#import "intro.asm"
 #import "portals.asm"
 #import "collisions.asm"
 #import "animations.asm"
 #import "charanims.asm"
 #import "levels.asm"
-
-
+#import "utils.asm"
+#import "statemachine.asm"
 
 /////////////////////////////////////////////
 // PLAYER DATA
@@ -173,13 +138,17 @@ fall_table:         .byte 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 
 /////////////////////////////////////////////
 // IMPORT SOUND FROM GOATTRACKER
 *=$1000 "Sound"
-    .import binary "emptysfx.bin"
+    .import binary "catrat.bin"
 sfx1:
     .byte $00,$FA,$08,$B8,$81,$A4,$41,$A0,$B4,$81,$98,$92,$9C,$90,$95,$9E
     .byte $92,$80,$94,$8F,$8E,$8D,$8C,$8B,$8A,$89,$88,$87,$86,$84,$00
+pling:
+    .byte $00,$F9,$00,$C0,$11,$C0,$10,$C0,$C0,$C8,$11,$C8,$10,$C8,$C8,$C8
+    .byte $C8,$C8,$C8,$C8,$C8,$C8,$C8,$C8,$00
 
-*=* "Statemachine"
-#import "statemachine.asm"
+    .byte $12,$3A,$00,$C3,$10,$C3,$01,$C8,$10,$C8,$0f,$C8,$0f,$C8,$0f,$C8,$01,$00
+
+#import "hud.asm"
 
 
 /////////////////////////////////////////////
@@ -218,14 +187,15 @@ map_data:   .fill map1.getMapSize()/2, map1.getMap(i*2)
 // hud_colors: .fill hud.getColorSize(), hud.getColor(i)
 
 
+*=* "Generated tables"
 
 level_pos_hi:
-    .for (var l=0; l<10; l++) {
-        .byte (map_data + (l*40*21)) >> 8
+    .for (var l=0; l<20; l++) {
+        .byte (map_data + ((l+2)*40*21)) >> 8
     }
 level_pos_lo:
-    .for (var l=0; l<10; l++) {
-        .byte (map_data + (l*40*21)) & $ff
+    .for (var l=0; l<20; l++) {
+        .byte (map_data + ((l+2)*40*21)) & $ff
     }
 
 
@@ -237,4 +207,3 @@ line_pos_lo:
     .for (var y=0; y<25; y++) {
         .byte ($0400 + (y*40)) & $ff
     }
-
