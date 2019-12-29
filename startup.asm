@@ -15,14 +15,38 @@ entrypoint:
 
     sei
 
-    // stop interrupts
+    // disable interrupts
     lda #$7f
     sta $dc0d
     sta $dd0d
 
+    // enable raster interrupts
+    lda #$01
+    sta $d01a
+
+    // set irq vector
+    lda #<IRQ
+    ldx #>IRQ
+    sta $fffe
+    stx $ffff
+
+    // set raster line for irq
+    lda $d011
+    and #$7f
+    sta $d011
+    lda #$2f
+    sta $d012
+
     // bank out stuff
     lda #$35
     sta $01
+
+    // init music
+    lda #$00
+    jsr $1000
+
+    // enable interrupts
+    cli
 
     // black border
     lda #0
@@ -46,11 +70,6 @@ zl: sta $02
     bne zl
 
     //  jsr intro
-
-
-    // init music
-    lda #$00
-    jsr $1000
 
 
     lda #0
@@ -101,9 +120,6 @@ mainloop:
     jsr char_animation
     jsr update_hud
 
-   // update music
-    jsr $1003
-
     // update player sprite position
     jsr move_animation
     lda player_x
@@ -121,6 +137,17 @@ mainloop:
     jmp mainloop
 
 
+IRQ:
+    sta ra+1
+    stx rx+1
+    sty ry+1
+    asl $d019
+    jsr $1003
+ra: lda #$0
+rx: ldx #$0
+ry: ldy #$0
+    rti
+
 #import "intro.asm"
 #import "portals.asm"
 #import "collisions.asm"
@@ -130,10 +157,9 @@ mainloop:
 #import "utils.asm"
 #import "statemachine.asm"
 
-/////////////////////////////////////////////
-// PLAYER DATA
-fall_table:         .byte 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 2, 2
-.label fall_table_length = *-fall_table-1
+
+.var ctmTemplate = "Junk=0,Font=20,Color=2068,Map=2324"
+.var map1 = LoadBinary("ten.ctm", ctmTemplate)
 
 /////////////////////////////////////////////
 // IMPORT SOUND FROM GOATTRACKER
@@ -146,7 +172,8 @@ pling:
     .byte $00,$F9,$00,$C0,$11,$C0,$10,$C0,$C0,$C8,$11,$C8,$10,$C8,$C8,$C8
     .byte $C8,$C8,$C8,$C8,$C8,$C8,$C8,$C8,$00
 
-    .byte $12,$3A,$00,$C3,$10,$C3,$01,$C8,$10,$C8,$0f,$C8,$0f,$C8,$0f,$C8,$01,$00
+*=* "Font Colors"
+map_colors: .fill map1.getColorSize(), map1.getColor(i)
 
 #import "hud.asm"
 
@@ -154,10 +181,7 @@ pling:
 /////////////////////////////////////////////
 // LOAD MAP FROM CHARPAD FILE
 *=$2000 "Font"
-.var ctmTemplate = "Junk=0,Font=20,Color=2068,Map=2324"
-.var map1 = LoadBinary("ten.ctm", ctmTemplate)
 map_font:   .fill map1.getFontSize(),  map1.getFont(i)
-map_colors: .fill map1.getColorSize(), map1.getColor(i)
 
 
 /////////////////////////////////////////////

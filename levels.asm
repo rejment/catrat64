@@ -33,7 +33,6 @@ show_level: {
 !:  lda #$ff
     cmp $d012
     bne *-3
-    jsr $1003
     lda $dc00
     eor #$ff
     and #%10000
@@ -125,7 +124,6 @@ display:
     sta $d011
 
     stx a+1
-    jsr $1003
 a:  lda #00
     sec
     sbc #$02
