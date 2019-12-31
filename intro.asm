@@ -1,4 +1,4 @@
-intro:
+intro: {
     jsr clearscreen
 
     lda #02
@@ -32,6 +32,12 @@ fade:
     bne *-3
     cmp $d012
     beq *-3
+
+    // fire to exit
+    lda $dc00
+    and #%10000
+    beq return
+
     dex
     bne !-
 
@@ -56,10 +62,15 @@ fade:
     bne *-3
     cmp $d012
     beq *-3
+    // fire to exit
+    lda $dc00
+    and #%10000
+    beq return
     dex
     bne !-
 
 
     jmp fade
-
+return:
     rts
+}

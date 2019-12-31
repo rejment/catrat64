@@ -13,3 +13,11 @@ clearscreen:
     sta $d800 + 750, x
     bne !-
     rts
+
+wait_fire:
+    lda #%10000
+    bit $dc00
+    beq *-3
+    bit $dc00
+    bne *-3
+    rts

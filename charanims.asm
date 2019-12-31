@@ -2,6 +2,7 @@
 // CHARACTER ANIMATIONS
 // 
 //
+.align $100
 charanim_hi:    .fill 64, 0
 charanim_lo:    .fill 64, 0
 charanim_min:   .fill 64, 0
@@ -10,6 +11,7 @@ material_min:   .byte $00, $00, 11, 1
 material_max:   .byte $00, $00, 13, 10
 char_animation_delay: .byte 1
 char_animation_count: .byte 0
+.print toHexString(char_animation)
 
 char_animation: {
     dec char_animation_delay
@@ -19,7 +21,7 @@ char_animation: {
     lda #$08
     sta char_animation_delay
 
-    ldx #$0     // X=list index
+    ldx #0     // X=list index
     jmp next
 nextindex:
     lda charanim_hi,x
@@ -31,12 +33,11 @@ nextindex:
 loadchar:
     lda $400
     beq skipchar
-    clc
-    adc #$01
-    cmp charanim_max, x
-    bcc savechar
-    beq savechar
-    lda charanim_min, x
+    sec
+    sbc #$01
+    cmp charanim_min, x
+    bcs savechar
+    lda charanim_max, x
 savechar:
     sta $400
 skipchar:

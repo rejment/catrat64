@@ -366,6 +366,18 @@ checkwin: {
     cmp #$50
     bne nowin
 
+hide: {
+    ldx #0
+reveal:
+    stx reload_x+1
+    jsr render_blinds
+reload_x:
+    ldx #00
+    inx
+    cpx #11+16
+    bne reveal
+}
+
     inc current_level
     jsr show_level
     lda #WAITING

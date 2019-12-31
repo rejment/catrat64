@@ -5,49 +5,23 @@ level_text: .byte 193, 186, 203, 186, 193
             .byte 145
 show_level: {
 
-    jsr clearscreen
-
-    lda #10
-    sta $d021
-
-    ldx #0
-    lda #154
-!:  sta $400, x
-    sta $400+256, x
-    sta $400+512, x
-    sta $400+512+256, x
-    inx
-    bne !-
-
-
-    ldx #0
-!:  lda level_text, x
-    sta $400 + 8*40 + (20-5), x
-    inx
-    cpx #8
-    bne !-
-
-    lda #$00
-    jsr $1000
-
-!:  lda #$ff
-    cmp $d012
-    bne *-3
-    lda $dc00
-    eor #$ff
-    and #%10000
-    beq !-
-
-    
-
-
-
-
-
     // screen off
     lda #$7b
     sta $d011
+
+    jsr clearscreen
+
+    ldx #4*40 + 1
+!:  lda #119
+    sta $400 + 40*21 - 1, x
+    lda #0
+    sta $d800 + 40*21 - 1, x
+    dex
+    bne !-
+
     // reset colors
+    lda #0
+    sta $d020
     lda #12
     sta $d021
     lda #10
@@ -86,15 +60,16 @@ copy_char_loop:
     jsr extract_animated_char
 
     inc map_data_ptr
-    bne *+4
+    bne !+
     inc map_data_ptr+1
-
+!:
     // screen and color are both aligned
     inc screen_data_ptr
     inc color_data_ptr
-    bne *+6
+    bne !+
     inc screen_data_ptr+1
     inc color_data_ptr+1
+!:
 
     // did we copy 40*21 chars?
     lda screen_data_ptr+1
@@ -106,42 +81,78 @@ copy_char_loop:
 
     // ------------------------
     // reveal animation
-    ldx #$e2-9
-display:
-    // screen on
-    txa
-    cmp $d012
-    bne *-3
-    lda #$1B
-    sta $D011
+    ldx #11+16
+reveal:
+    stx reload_x+1
+    jsr render_blinds
+reload_x:
+    ldx #00
+    dex
+    bne reveal
 
-    // screen off
-    lda #$e2-8
-    cmp $d012
-    bne *-3
-    // screen off
-    lda #$7B
-    sta $d011
-
-    stx a+1
-a:  lda #00
-    sec
-    sbc #$02
-    tax
-    cmp #$10
-    bcs display
 
     lda #$1B
     sta $d011
 
-    lda #$01
-    jsr $1000
+    // lda #$01
+    // jsr $1000
 
     lda #250
     sta player_time
 
     rts
 }
+blind:
+    .byte 0
+blinds:
+    .fill 11, 0 // end with all open
+    .fill 16, i // 0 - 16
+    .fill 11, 17 // all closed
+
+    .label FIRST_LINE = $32
+render_blinds:
+    lda #$ff
+    cmp $d012
+    bne *-3
+    lda #FIRST_LINE+1
+    cmp $d012
+    bne *-3
+    lda #$1b    // on
+    sta $d011
+
+    lda #FIRST_LINE
+    sta start_of_blind+1
+one_blind:
+    lda blinds,x
+    beq skip_blind  // no blind
+start_of_blind:
+    ldy #$00
+    cpy $d012
+    bne *-3
+    ldy #$7b        // off
+    sty $d011
+    cmp #16
+    bcs skip_blind  // no opening
+    clc
+    adc start_of_blind+1
+    ldy #$1b    // on
+    cmp $d012
+    bne *-3
+    sty $d011
+skip_blind:
+    inx
+    lda start_of_blind+1
+    clc
+    adc #16
+    sta start_of_blind+1
+    cmp #FIRST_LINE + 16*11
+    bne one_blind
+
+    cmp $d012
+    bne *-3
+    ldy #$7b        // off
+    sty $d011
+    rts
 
 ////////////////////////////////////////////////
 // 

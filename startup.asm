@@ -34,7 +34,7 @@ entrypoint:
     lda $d011
     and #$7f
     sta $d011
-    lda #$2f
+    lda #$01
     sta $d012
 
     // bank out stuff
@@ -42,7 +42,7 @@ entrypoint:
     sta $01
 
     // init music
-    lda #$00
+    lda #$01
     jsr $1000
 
     // enable interrupts
@@ -69,10 +69,10 @@ zl: sta $02
     inc zl+1
     bne zl
 
-    //  jsr intro
+    jsr intro
 
 
-    lda #0
+    lda #3
     sta current_level
     jsr show_level
 
@@ -92,11 +92,21 @@ zl: sta $02
     sta player_score+1
 
 mainloop:
-    // wait for HUD raster pos
+    // black bg during hud
     lda #$e2-8
     cmp $d012
     bne *-3
+    lda #0
+    sta $d021
 
+    // gray after hud
+    lda #$ff
+    cmp $d012
+    bne *-3
+    lda #12
+    sta $d021
+
+    // count time
     inc frame_counter
     lda frame_counter
     cmp #50
@@ -106,18 +116,15 @@ mainloop:
     dec player_time
 !:
 
-    lda #0
-    sta $d021
-
-    lda #$ff
+    lda #$50
     cmp $d012
     bne *-3
 
-    lda #12
-    sta $d021
 
     // animate characters
+    inc $d020
     jsr char_animation
+    dec $d020
     jsr update_hud
 
     // update player sprite position
@@ -141,8 +148,14 @@ IRQ:
     sta ra+1
     stx rx+1
     sty ry+1
-    asl $d019
+    lda $d020
+    sta b0+1
+    lda #4
+    sta $d020
     jsr $1003
+    asl $d019
+b0: lda #0 
+    sta $d020
 ra: lda #$0
 rx: ldx #$0
 ry: ldy #$0
@@ -153,7 +166,6 @@ ry: ldy #$0
 #import "collisions.asm"
 #import "animations.asm"
 #import "charanims.asm"
-#import "levels.asm"
 #import "utils.asm"
 #import "statemachine.asm"
 
@@ -164,7 +176,7 @@ ry: ldy #$0
 /////////////////////////////////////////////
 // IMPORT SOUND FROM GOATTRACKER
 *=$1000 "Sound"
-    .import binary "catrat.bin"
+    .import binary "kattratt.bin"
 sfx1:
     .byte $00,$FA,$08,$B8,$81,$A4,$41,$A0,$B4,$81,$98,$92,$9C,$90,$95,$9E
     .byte $92,$80,$94,$8F,$8E,$8D,$8C,$8B,$8A,$89,$88,$87,$86,$84,$00
@@ -176,6 +188,7 @@ pling:
 map_colors: .fill map1.getColorSize(), map1.getColor(i)
 
 #import "hud.asm"
+#import "levels.asm"
 
 
 /////////////////////////////////////////////
