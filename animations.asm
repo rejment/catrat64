@@ -14,9 +14,14 @@ start_animation:
     inc player_anim_end
     lda spr_anims_from,x
     sta player_anim_frame
+    tax
     clc
     adc #sprite_data/64
     sta $07F8   // sprite data #1
+    lda eyes, x
+    clc
+    adc #sprite_data/64
+    sta $07F9   // sprite data #2
 !end:
     rts
 
@@ -38,10 +43,25 @@ move_animation:
     lda spr_anims_from,x
     sta player_anim_frame
 !:
+    tax
     clc
     adc #sprite_data/64
     sta $07F8   // sprite data #1
+    lda eyes, x
+    clc
+    adc #sprite_data/64
     sta $07F9   // sprite data #2
 
 !end:
     rts
+
+eyes: 
+    .byte 0,0,0,0,0,0,0,0
+    .byte 0,0,0,0,0,0,0,0
+    .byte 48,48,48,48,52,52,52,52
+    .byte 50,50,50,50,54,54,54,54
+    .byte 50,50,50,50,54,54,54,54
+    .byte 50,50,50,50,54,54,54,54
+    .byte 0,0,0,0,0,0,0,0
+    .byte 0,0,0,0,0,0,0,0
+    .byte 0,0,0,0,64,65,66,67

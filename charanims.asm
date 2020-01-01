@@ -11,7 +11,6 @@ material_min:   .byte $00, $00, 11, 1
 material_max:   .byte $00, $00, 13, 10
 char_animation_delay: .byte 1
 char_animation_count: .byte 0
-.print toHexString(char_animation)
 
 char_animation: {
     dec char_animation_delay
@@ -21,13 +20,13 @@ char_animation: {
     lda #$08
     sta char_animation_delay
 
-    ldx #0     // X=list index
+    ldx char_animation_count     // X=list index
     jmp next
 nextindex:
-    lda charanim_hi,x
+    lda charanim_hi-1,x
     sta loadchar+2
     sta savechar+2
-    lda charanim_lo,x
+    lda charanim_lo-1,x
     sta loadchar+1
     sta savechar+1
 loadchar:
@@ -35,15 +34,14 @@ loadchar:
     beq skipchar
     sec
     sbc #$01
-    cmp charanim_min, x
+    cmp charanim_min-1, x
     bcs savechar
-    lda charanim_max, x
+    lda charanim_max-1, x
 savechar:
     sta $400
 skipchar:
-    inx
+    dex
 next:
-    cpx char_animation_count
     bne nextindex
     rts
 }

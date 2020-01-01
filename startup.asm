@@ -72,7 +72,7 @@ zl: sta $02
     jsr intro
 
 
-    lda #3
+    lda #0
     sta current_level
     jsr show_level
 
@@ -80,10 +80,13 @@ zl: sta $02
     // show player sprite
     lda #sprite_data/64
     sta $07F8   // sprite data #1
-    lda #%001
+    sta $07F9   // sprite data #2
+    lda #%011
     sta $d015   // sprite enable
     lda #BLACK
     sta $d027   // sprite color #1
+    lda #LIGHT_BLUE
+    sta $d028   // sprite color #2
 
     lda #$01
     jsr start_animation
@@ -122,9 +125,9 @@ mainloop:
 
 
     // animate characters
-    inc $d020
+    // inc $d020
     jsr char_animation
-    dec $d020
+    // dec $d020
     jsr update_hud
 
     // update player sprite position
@@ -134,11 +137,12 @@ mainloop:
     sta $d002   // sprite x #2
     lda player_x+1
     and #$01
-    sta $d010
+    beq no
+    lda #$03
+no: sta $d010
     lda player_y
     sta $d001   // sprite y #1
     sta $d003   // sprite y #2
-    dec $d003
 
     jsr statemachine
     jmp mainloop
@@ -151,11 +155,11 @@ IRQ:
     lda $d020
     sta b0+1
     lda #4
-    sta $d020
+    // sta $d020
     jsr $1003
     asl $d019
 b0: lda #0 
-    sta $d020
+    // sta $d020
 ra: lda #$0
 rx: ldx #$0
 ry: ldy #$0
