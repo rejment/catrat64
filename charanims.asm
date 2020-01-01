@@ -3,14 +3,11 @@
 // 
 //
 .align $100
-charanim_hi:    .fill 64, 0
-charanim_lo:    .fill 64, 0
-charanim_min:   .fill 64, 0
-charanim_max:   .fill 64, 0
-material_min:   .byte $00, $00, 11, 1
-material_max:   .byte $00, $00, 13, 10
+charanim_speedcode:   .fill 256, $60 // fill with rts
+material_cur:   .byte 11, 1
+material_min:   .byte 11, 1
+material_max:   .byte 14, 11
 char_animation_delay: .byte 1
-char_animation_count: .byte 0
 
 char_animation: {
     dec char_animation_delay
@@ -20,28 +17,52 @@ char_animation: {
     lda #$08
     sta char_animation_delay
 
-    ldx char_animation_count     // X=list index
-    jmp next
-nextindex:
-    lda charanim_hi-1,x
-    sta loadchar+2
-    sta savechar+2
-    lda charanim_lo-1,x
-    sta loadchar+1
-    sta savechar+1
-loadchar:
-    lda $400
-    beq skipchar
-    sec
-    sbc #$01
-    cmp charanim_min-1, x
-    bcs savechar
-    lda charanim_max-1, x
-savechar:
-    sta $400
-skipchar:
-    dex
+    clc
+    lda material_cur+1
+    adc #$1
+    cmp material_max+1
+    bne !+
+    lda material_min+1
+!:  sta material_cur+1
+
+    clc
+    lda material_cur
+    adc #$1
+    cmp material_max
+    bne !+
+    lda material_min
+!:  sta material_cur
+
+    ldx material_cur+1
+    jmp charanim_speedcode
+}
+
+char_animation_remove: {
+    tya
+    clc
+    adc get_collision_temp
+    sta get_collision_temp
+    lda get_collision_temp+1
+    adc #0
+    sta get_collision_temp+1
+
+    ldx #0
+try:
+    lda get_collision_temp
+    cmp charanim_speedcode+1, x
+    bne next
+    lda get_collision_temp+1
+    cmp charanim_speedcode+2, x
+    bne next
+    lda #$0c // TOP
+    sta charanim_speedcode,x
+    rts
 next:
-    bne nextindex
+    inx
+    inx
+    inx
+    cpx charanim_speedcode_ptr
+    bne try
+done:
     rts
 }

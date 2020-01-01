@@ -125,6 +125,7 @@ pickup_loot: {
     ldy get_collision_result_x
     sta (get_collision_temp),y
 
+    jsr char_animation_remove
 
     clc
     lda player_score

@@ -85,7 +85,7 @@ zl: sta $02
     sta $d015   // sprite enable
     lda #BLACK
     sta $d027   // sprite color #1
-    lda #LIGHT_BLUE
+    lda #RED
     sta $d028   // sprite color #2
 
     lda #$01

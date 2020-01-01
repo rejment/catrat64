@@ -30,7 +30,7 @@ show_level: {
     sta $d023
 
     lda #$00
-    sta char_animation_count
+    sta charanim_speedcode_ptr
 
     // setup ptrs
     ldx current_level
@@ -78,6 +78,11 @@ copy_char_loop:
     lda screen_data_ptr
     cmp #$48
     bne copy_char_loop
+
+    lda #$60    // rts
+    ldx charanim_speedcode_ptr
+    sta charanim_speedcode, x
+
 
     // ------------------------
     // reveal animation
@@ -174,21 +179,17 @@ extract_animated_char:
     rts
 
 animated:
-    tay
-    ldx char_animation_count
-    inc char_animation_count
-
-    lda material_min, y
-    sta charanim_min, x
-
-    lda material_max, y
-    sta charanim_max, x
-
+    ldx charanim_speedcode_ptr
+    clc
+    adc #$8d - 2// sta/stx
+    sta charanim_speedcode + 0, x
     lda screen_data_ptr
-    sta charanim_lo, x
-
-    lda screen_data_ptr+1
-    sta charanim_hi, x
+    sta charanim_speedcode + 1, x
+    lda screen_data_ptr + 1
+    sta charanim_speedcode + 2, x
+    inc charanim_speedcode_ptr
+    inc charanim_speedcode_ptr
+    inc charanim_speedcode_ptr
     rts
 
 starting_pos:

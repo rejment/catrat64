@@ -42,7 +42,8 @@ current_level:      .byte 0
 map_data_ptr:       .word 0
 screen_data_ptr:    .word 0 
 color_data_ptr:     .word 0 
-map_bytes_remain:   .word 0 
+map_bytes_remain:   .word 0
+charanim_speedcode_ptr: .byte 0
 
 
 // print decimal
