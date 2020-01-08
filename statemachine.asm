@@ -165,6 +165,8 @@ walking:
     jsr get_player_collision
     cmp #$10
     beq nofall
+    cmp #$60
+    beq nofall
     ldx #$07
     ldy #$08
     jsr get_player_collision
@@ -227,6 +229,8 @@ walking:
     ldy #$08
     jsr get_player_collision
     cmp #$10
+    beq nofall
+    cmp #$60
     beq nofall
     ldx #$07
     ldy #$08
