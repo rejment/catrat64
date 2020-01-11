@@ -105,6 +105,9 @@ reload_x:
     lda #250
     sta player_time
 
+    lda #0
+    sta player_keys
+
     rts
 }
 blind:

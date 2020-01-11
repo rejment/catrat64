@@ -113,8 +113,49 @@ pickup_loot: {
     sty ry+1
 
     lda get_collision_result
+    cmp #$a0
+    bne notdoor
+
+hit_door:
+    lda player_keys
+    bne open_door
+
+    lda #$10
+    sta get_collision_result
+    jmp exit
+
+open_door:
+    ldx get_collision_result_y
+    lda line_pos_lo, x
+    sta get_collision_temp
+    lda line_pos_hi, x
+    sta get_collision_temp+1
+    lda #$00
+    ldy get_collision_result_x
+    sta (get_collision_temp),y
+    dec player_keys
+    jmp exit
+
+notdoor:
+    cmp #$b0
+    bne notkey
+
+pickup_key:
+    ldx get_collision_result_y
+    lda line_pos_lo, x
+    sta get_collision_temp
+    lda line_pos_hi, x
+    sta get_collision_temp+1
+    lda #$00
+    ldy get_collision_result_x
+    sta (get_collision_temp),y
+    inc player_keys
+    jmp exit
+
+notkey:
     cmp #$30
     bne exit
+
 
     ldx get_collision_result_y
     lda line_pos_lo, x

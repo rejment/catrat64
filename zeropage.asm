@@ -32,6 +32,7 @@ player_y:           .byte $b5
 fall_index:         .byte $00
 player_score:       .word $0000
 player_time:        .byte $00
+player_keys:        .byte $00
 frame_counter:      .byte $00
 
 // states
